@@ -177,42 +177,81 @@
   </footer>
 
   <script>
-    function verifier() {
-      const valeur = document.getElementById("url").value.trim();
-      const resultat = document.getElementById("result");
+    
+function verifier() {
+  const valeur = document.getElementById("url").value.trim();
+  const resultat = document.getElementById("result");
 
-      if (!valeur) {
-        resultat.textContent = "Entre une adresse à examiner.";
-        return;
-      }
+  if (!valeur) {
+    resultat.textContent = "Entre une adresse à examiner.";
+    return;
+  }
 
-      let adresse;
-      try {
-        adresse = new URL(
-          /^[a-z]+:\/\//i.test(valeur) ? valeur : "https://" + valeur
-        );
-      } catch {
-        resultat.textContent = "Adresse incorrecte. Vérifie le lien.";
-        return;
-      }
+  let adresse;
 
-      if (!["http:", "https:"].includes(adresse.protocol)) {
-        resultat.textContent = "Protocole non pris en charge.";
-        return;
-      }
+  try {
+    adresse = new URL(
+      /^[a-z]+:\/\//i.test(valeur)
+        ? valeur
+        : "https://" + valeur
+    );
+  } catch {
+    resultat.textContent = "Adresse incorrecte.";
+    return;
+  }
 
-      const alertes = [];
-      if (adresse.protocol !== "https:") alertes.push("Le lien n'utilise pas HTTPS.");
-      if (adresse.hostname.includes("xn--")) alertes.push("Le nom de domaine contient un encodage pouvant masquer des caractères.");
-      if (/^\d{1,3}(\.\d{1,3}){3}$/.test(adresse.hostname)) alertes.push("Le site utilise une adresse IP au lieu d'un nom de domaine.");
-      if (adresse.hostname.length > 45) alertes.push("Le nom de domaine est particulièrement long.");
+  if (
+    !["http:", "https:"].includes(adresse.protocol) ||
+    !adresse.hostname ||
+    adresse.username ||
+    adresse.password
+  ) {
+    resultat.textContent = "Adresse non valide ou suspecte.";
+    return;
+  }
 
-      resultat.textContent = alertes.length
-        ? "Points de vigilance : " + alertes.join(" ")
-        : "Aucun de ces contrôles simples n'a détecté d'anomalie. Cela ne prouve absolument pas que le site est fiable.";
+  const alertes = [];
+  const domaine = adresse.hostname.toLowerCase();
 
-      resultat.textContent += " Réputation non vérifiée : ne communique jamais de code secret.";
-    }
+  if (adresse.protocol !== "https:") {
+    alertes.push("Absence de HTTPS.");
+  }
+
+  if (domaine.includes("xn--")) {
+    alertes.push("Domaine pouvant imiter un autre site.");
+  }
+
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(domaine)) {
+    alertes.push("Adresse IP utilisée comme domaine.");
+  }
+
+  if (domaine.length > 45) {
+    alertes.push("Nom de domaine très long.");
+  }
+
+  if (domaine.split(".").length >= 5) {
+    alertes.push("Trop de sous-domaines.");
+  }
+
+  if (/(bit\.ly|tinyurl\.com|t\.co|cutt\.ly)$/i.test(domaine)) {
+    alertes.push("Lien raccourci : destination masquée.");
+  }
+
+  resultat.style.background = alertes.length
+    ? "#fff2e8"
+    : "#edf4fa";
+
+  if (alertes.length) {
+    resultat.textContent =
+      "⚠️ LIEN SUSPECT : " + alertes.join(" ");
+  } else {
+    resultat.textContent =
+      "ℹ️ Aucun problème détecté par les contrôles locaux.";
+  }
+
+  resultat.textContent +=
+    " Attention : aucune vérification de réputation en ligne n'est encore activée. Ne partage jamais ton code PIN, OTP ou mot de passe.";
+}
 
     function preparerSignalement() {
       const type = document.getElementById("type").value;
